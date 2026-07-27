@@ -2,55 +2,37 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const multer = require("multer");
 const mongoose = require("mongoose");
+const multer = require("multer");
 const auth = require("../middleware/auth");
 const Note = require("../models/Note");
 const User = require("../models/User");
+const upload = require("../middlewares/upload");
 
 const router = express.Router();
 
-const UPLOADS_DIR = path.join(__dirname, "..", "uploads");
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const safe = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.pdf`;
-    cb(null, safe);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 25 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const isPdfName = file.originalname.toLowerCase().endsWith(".pdf");
-    if (isPdfName) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only PDF files are allowed"));
-    }
-  },
-});
-
-function handleMulterUpload(req, res, next) {
+function handleUpload(req, res, next) {
   upload.single("file")(req, res, (err) => {
     if (err) {
-      const message =
-        err instanceof multer.MulterError
-          ? err.code === "LIMIT_FILE_SIZE"
-            ? "File too large"
-            : err.message
-          : err.message;
+      console.error("[Upload] Cloudinary/Multer error:", err);
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ error: "File too large" });
+        }
+        return res.status(400).json({ error: err.message });
+      }
+      // Surface the actual Cloudinary error message (e.g. "Invalid Signature")
+      const message = err.message || err.http_code
+        ? `Cloudinary: ${err.message}`
+        : "Cloudinary upload failed";
       return res.status(400).json({ error: message });
     }
     next();
   });
 }
 
-router.post("/upload", auth, handleMulterUpload, async (req, res) => {
+// POST /api/notes/upload-pdf
+router.post("/upload-pdf", auth, handleUpload, async (req, res) => {
   const { title, subject } = req.body;
   const uploadedBy = req.user?.id;
 
@@ -58,30 +40,35 @@ router.post("/upload", auth, handleMulterUpload, async (req, res) => {
     return res.status(400).json({ error: "PDF file is required (field name: file)" });
   }
 
+  // Debug: log what Cloudinary returned on the file object
+  console.log("[Upload] File from Cloudinary:", {
+    path: req.file.path,
+    filename: req.file.filename,
+    size: req.file.size,
+  });
+
   if (
     typeof title !== "string" ||
     !title.trim() ||
     typeof subject !== "string" ||
     !subject.trim()
   ) {
-    fs.unlink(req.file.path, () => {});
     return res.status(400).json({
       error: "title and subject are required",
     });
   }
 
   if (!uploadedBy || !mongoose.Types.ObjectId.isValid(uploadedBy)) {
-    fs.unlink(req.file.path, () => {});
     return res.status(401).json({ error: "Invalid token user" });
   }
 
   const user = await User.findById(uploadedBy);
   if (!user) {
-    fs.unlink(req.file.path, () => {});
     return res.status(404).json({ error: "User not found" });
   }
 
-  const fileUrl = `/uploads/${req.file.filename}`;
+  // req.file.path is the secure_url set by multer-storage-cloudinary
+  const fileUrl = req.file.path;
 
   try {
     const note = await Note.create({
@@ -91,19 +78,14 @@ router.post("/upload", auth, handleMulterUpload, async (req, res) => {
       uploadedBy,
     });
 
+    console.log("[Upload] Note saved:", note._id.toString());
+
     return res.status(201).json({
-      message: "Note uploaded",
-      note: {
-        id: note._id.toString(),
-        title: note.title,
-        subject: note.subject,
-        fileUrl: note.fileUrl,
-        uploadedBy: note.uploadedBy.toString(),
-        createdAt: note.createdAt,
-      },
+      message: "Uploaded to Cloudinary",
+      fileUrl,
     });
-  } catch {
-    fs.unlink(req.file.path, () => {});
+  } catch (err) {
+    console.error("[Upload] DB save error:", err);
     return res.status(500).json({ error: "Could not save note" });
   }
 });
@@ -230,11 +212,8 @@ router.delete("/:id", auth, async (req, res) => {
 
     await note.deleteOne();
 
-    if (note.fileUrl) {
-      const fileName = path.basename(note.fileUrl);
-      const filePath = path.join(UPLOADS_DIR, fileName);
-      fs.unlink(filePath, () => {});
-    }
+    // TODO: Ideally also delete object from Cloudinary here
+    // For now we just remove db entries
 
     return res.json({ message: "Note deleted successfully" });
   } catch {

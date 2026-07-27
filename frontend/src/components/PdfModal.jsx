@@ -1,8 +1,6 @@
-import { API_BASE_URL } from "../lib/api";
-
 export default function PdfModal({ note, onClose }) {
   if (!note) return null;
-  const pdfUrl = `${API_BASE_URL}${note.fileUrl}`;
+  const pdfUrl = note.fileUrl;
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
@@ -36,7 +34,11 @@ export default function PdfModal({ note, onClose }) {
           </div>
         </div>
         <div className="h-[70vh]">
-          <iframe src={pdfUrl} title={note.title} className="h-full w-full" />
+          <iframe 
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`} 
+            title={note.title} 
+            className="h-full w-full" 
+          />
         </div>
       </div>
     </div>

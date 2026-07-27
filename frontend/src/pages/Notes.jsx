@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import PdfModal from "../components/PdfModal";
 import Spinner from "../components/Spinner";
 import { useToast } from "../components/ToastProvider";
-import { api, API_BASE_URL, getUser } from "../lib/api";
+import { api, getUser } from "../lib/api";
 
 export default function Notes() {
   const toast = useToast();
@@ -17,7 +17,7 @@ export default function Notes() {
   const [sharingId, setSharingId] = useState("");
   const [shareInfo, setShareInfo] = useState(null);
 
-  const base = useMemo(() => API_BASE_URL, []);
+
   const subjects = useMemo(
     () => ["all", ...new Set(notes.map((n) => n.subject).filter(Boolean))],
     [notes]
@@ -213,7 +213,7 @@ export default function Notes() {
                       Preview
                     </button>
                     <a
-                      href={`${base}${n.fileUrl}`}
+                      href={`https://docs.google.com/viewer?url=${encodeURIComponent(n.fileUrl)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex w-full flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80 sm:w-auto"
@@ -221,7 +221,7 @@ export default function Notes() {
                       Open
                     </a>
                     <a
-                      href={`${base}${n.fileUrl}`}
+                      href={n.fileUrl}
                       download
                       className="flex w-full flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80 sm:w-auto"
                     >

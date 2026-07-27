@@ -9,8 +9,7 @@ const authRoutes = require("./routes/auth");
 const notesRoutes = require("./routes/notes");
 
 const app = express();
-const uploadsDir = path.join(__dirname, "uploads");
-fs.mkdirSync(uploadsDir, { recursive: true });
+// Removed local storage
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -25,10 +24,15 @@ app.use(
   })
 );
 
-app.use("/uploads", express.static(uploadsDir));
+// Remove local uploads static route
 
 app.use("/api/auth", authRoutes);
 app.use("/api/notes", notesRoutes);
+// Alias to satisfy strict POST /api/upload-pdf requirement
+app.use("/api/upload-pdf", (req, res, next) => {
+  req.url = '/upload-pdf';
+  notesRoutes(req, res, next);
+});
 
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "Server is running" });

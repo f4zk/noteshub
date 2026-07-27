@@ -39,8 +39,7 @@ export default function Upload() {
     setLoading(true);
     setProgress(0);
     try {
-      await api.post("/api/notes/upload", form, {
-        headers: { "Content-Type": "multipart/form-data" },
+      await api.post("/api/notes/upload-pdf", form, {
         onUploadProgress: (evt) => {
           if (!evt.total) return;
           setProgress(Math.round((evt.loaded * 100) / evt.total));
