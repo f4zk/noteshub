@@ -17,10 +17,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     const payload = { email: email.trim(), password };
-    console.log("[Login] Request URL:", "http://localhost:3000/api/auth/login");
-    console.log("[Login] Payload:", { email: payload.email, password: "[hidden]" });
+    console.log("[Login] Request URL:", `${API_BASE_URL}/auth/login`);
+    console.log("[Login] Payload:", {
+      email: payload.email,
+      password: "[hidden]",
+    });
     try {
-      const res = await api.post("/api/auth/login", payload, {
+      const res = await api.post("/auth/login", payload, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -53,13 +56,18 @@ export default function Login() {
   return (
     <div className="mx-auto grid min-h-[calc(100vh-72px)] max-w-6xl place-items-center px-4 py-8">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 p-7 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Welcome back</h1>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">
+          Welcome back
+        </h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           Continue to your notes dashboard.
         </p>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           Don&apos;t have an account?{" "}
-          <Link className="font-medium text-slate-900 underline dark:text-slate-100" to="/signup">
+          <Link
+            className="font-medium text-slate-900 underline dark:text-slate-100"
+            to="/signup"
+          >
             Signup
           </Link>
         </p>
@@ -72,7 +80,9 @@ export default function Login() {
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Email
+            </label>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -83,7 +93,9 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Password
+            </label>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -104,4 +116,3 @@ export default function Login() {
     </div>
   );
 }
-
