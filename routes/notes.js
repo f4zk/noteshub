@@ -22,9 +22,10 @@ function handleUpload(req, res, next) {
         return res.status(400).json({ error: err.message });
       }
       // Surface the actual Cloudinary error message (e.g. "Invalid Signature")
-      const message = err.message || err.http_code
-        ? `Cloudinary: ${err.message}`
-        : "Cloudinary upload failed";
+      const message =
+        err.message || err.http_code
+          ? `Cloudinary: ${err.message}`
+          : "Cloudinary upload failed";
       return res.status(400).json({ error: message });
     }
     next();
@@ -37,7 +38,9 @@ router.post("/upload-pdf", auth, handleUpload, async (req, res) => {
   const uploadedBy = req.user?.id;
 
   if (!req.file) {
-    return res.status(400).json({ error: "PDF file is required (field name: file)" });
+    return res
+      .status(400)
+      .json({ error: "PDF file is required (field name: file)" });
   }
 
   // Debug: log what Cloudinary returned on the file object
@@ -137,7 +140,9 @@ router.post("/share/:id", auth, async (req, res) => {
       return res.status(404).json({ error: "Note not found" });
     }
     if (note.uploadedBy.toString() !== userId) {
-      return res.status(403).json({ error: "You can only share your own notes" });
+      return res
+        .status(403)
+        .json({ error: "You can only share your own notes" });
     }
 
     const shareToken = crypto.randomBytes(24).toString("hex");
@@ -147,8 +152,22 @@ router.post("/share/:id", auth, async (req, res) => {
     note.expiresAt = expiresAt;
     await note.save();
 
-    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    // Get the first frontend URL if multiple origins are configured
+    const frontendBaseUrl = (
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    )
+      .split(",")[0]
+      .replace(/^FRONTEND_URL=/, "")
+      .trim()
+      .replace(/\/$/, "");
+
     const shareLink = `${frontendBaseUrl}/share/${shareToken}`;
+
+    return res.json({
+      message: "Share link created",
+      shareLink,
+      expiresAt,
+    });
     return res.json({
       message: "Share link created",
       shareLink,
@@ -166,7 +185,10 @@ router.get("/public/:token", async (req, res) => {
   }
 
   try {
-    const note = await Note.findOne({ shareToken: token, isPublic: true }).lean();
+    const note = await Note.findOne({
+      shareToken: token,
+      isPublic: true,
+    }).lean();
     if (!note) {
       return res.status(404).json({ error: "Shared note not found" });
     }
@@ -207,7 +229,9 @@ router.delete("/:id", auth, async (req, res) => {
     }
 
     if (note.uploadedBy.toString() !== userId) {
-      return res.status(403).json({ error: "You can only delete your own notes" });
+      return res
+        .status(403)
+        .json({ error: "You can only delete your own notes" });
     }
 
     await note.deleteOne();
