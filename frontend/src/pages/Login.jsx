@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api, setToken, setUser } from "../lib/api";
+import { api, API_BASE_URL, setToken, setUser } from "../lib/api";
 import Spinner from "../components/Spinner";
 import { useToast } from "../components/ToastProvider";
 
@@ -17,13 +17,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     const payload = { email: email.trim(), password };
-    console.log("[Login] Request URL:", `${API_BASE_URL}/auth/login`);
+    console.log("[Login] Request URL:", `${API_BASE_URL}/api/auth/login`);
     console.log("[Login] Payload:", {
       email: payload.email,
       password: "[hidden]",
     });
     try {
-      const res = await api.post("/auth/login", payload, {
+      const res = await api.post("/api/auth/login", payload, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -41,10 +41,13 @@ export default function Login() {
       navigate("/upload", { replace: true });
     } catch (err) {
       console.error("[Login] Error:", err);
+      const isNetworkErr = err?.message === "Network Error" || err?.code === "ERR_NETWORK";
       const backendMessage =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
-        err?.message ||
+        (isNetworkErr
+          ? `Cannot connect to server at ${API_BASE_URL}. Please ensure the backend server is running.`
+          : err?.message) ||
         "Login failed";
       setError(backendMessage);
       toast.error(backendMessage);
