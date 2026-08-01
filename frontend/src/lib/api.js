@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+let envUrl = (import.meta.env.VITE_API_URL || "http://localhost:3000").trim().replace(/\/+$/, "");
+if (envUrl.endsWith("/api")) {
+  envUrl = envUrl.slice(0, -4);
+}
+export const API_BASE_URL = envUrl;
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 const THEME_KEY = "theme";
